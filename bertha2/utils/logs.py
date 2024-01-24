@@ -1,5 +1,5 @@
 import logging
-from bertha2.settings import cli_args, log_format
+from bertha2.settings import cli_args, LOG_FORMAT
 
 def initialize_module_logger(module_name):
     logger = logging.getLogger(module_name)
@@ -24,7 +24,7 @@ def initialize_root_logger(root_module):
         numeric_level = 20
     else:
         numeric_level = getattr(logging, cli_args.log.upper())
-    logging.basicConfig(level=numeric_level, format=log_format)  # NOTE: Without this, logs won't print in the console.
+    logging.basicConfig(level=numeric_level, format=LOG_FORMAT)  # NOTE: Without this, logs won't print in the console.
     return logging.getLogger(root_module)
 
 

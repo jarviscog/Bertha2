@@ -2,7 +2,7 @@ import asyncio
 
 import simpleobsws
 
-from bertha2.settings import obs_websocket_url, video_width, video_height
+from bertha2.settings import OBS_WEBSOCKET_URL, VIDEO_WIDTH, VIDEO_HEIGHT
 from bertha2.utils.logs import initialize_module_logger
 
 logger = initialize_module_logger(__name__)
@@ -12,7 +12,7 @@ def create_obs_websocket_client():
     # Create an IdentificationParameters object (optional for connecting)
     parameters = simpleobsws.IdentificationParameters(ignoreNonFatalRequestChecks=False)
     # Every possible argument has been passed, but none are required. See lib code for defaults.
-    return simpleobsws.WebSocketClient(url=obs_websocket_url, identification_parameters=parameters)
+    return simpleobsws.WebSocketClient(url=OBS_WEBSOCKET_URL, identification_parameters=parameters)
 
 
 obs_ws_client = create_obs_websocket_client()
@@ -62,8 +62,8 @@ def update_obs_video_source_value(video_source_id, video_filepath: str):
         'inputName': video_source_id,
         'inputSettings': {
             'local_file': video_filepath,
-            'width': video_width,
-            'height': video_height,
+            'width': VIDEO_WIDTH,
+            'height': VIDEO_HEIGHT,
         }
     }
 

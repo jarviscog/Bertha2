@@ -10,7 +10,7 @@
 * [NOT SPECIFIC] If a link that doesn't work gets past initial filter, make sure it doesn't mess everything up.
 * [JARVIS] Make a message saying the bot is down when it closes (i.e. set obs text to something like "bot is offline for maintenance")
 * [JARVIS] Why are other users seeing messages from berthatwo? All responses to !play commands should be whispers
-* [NOT SPECIFIC] Add some serious try catches to this code so things don't go wrong
+* [JARVIS] Add some serious try catches to this code so things don't go wrong
 * [NOT SPECIFIC] Is this queueing every video?
 * [NOT SPECIFIC] Add some better explanations for what is going on (why does your video not immediately appear in next up? why does the bot not respond to only "!play"?)
 * [MALCOLM] Doesn't always save the play queue (like when the hardware isn't working)

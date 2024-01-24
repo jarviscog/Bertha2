@@ -1,25 +1,25 @@
 from multiprocessing import connection
 
-from bertha2.settings import cuss_words, solenoid_cooldown_s, max_video_title_length_queue, no_video_playing_text, \
-    status_text_obs_source_id, playing_video_obs_source_id, visuals_nonempty_queue_header_message, visuals_empty_queue_next_up_message, default_visuals_state
+from bertha2.settings import CUSS_WORDS, SOLENOID_COOLDOWN_S, MAX_VIDEO_TITLE_LENGTH_QUEUE, NO_VIDEO_PLAYING_TEXT, \
+    STATUS_TEXT_OBS_SOURCE_ID, PLAYING_VIDEO_OBS_SOURCE_ID, VISUALS_NONEMPTY_QUEUE_HEADER_MESSAGE, VISUALS_EMPTY_QUEUE_NEXT_UP_MESSAGE, DEFAULT_VISUALS_STATE
 from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode
 from bertha2.utils.obs import update_obs_text_source_value, update_obs_video_source_value
 
 logger = initialize_module_logger(__name__)
 
-visuals_state = default_visuals_state
+visuals_state = DEFAULT_VISUALS_STATE
 
 def filter_cuss_words_from_title(title: str):
     new_title = title
-    for word in cuss_words:
+    for word in CUSS_WORDS:
         new_title = new_title.replace(word, "****")
 
     return new_title
 
 
 def shorten_title(title: str):
-    if len(title) > max_video_title_length_queue:
-        title = title[0:(max_video_title_length_queue - 3)] + "..."
+    if len(title) > MAX_VIDEO_TITLE_LENGTH_QUEUE:
+        title = title[0:(MAX_VIDEO_TITLE_LENGTH_QUEUE - 3)] + "..."
 
     return title
 
@@ -35,7 +35,7 @@ def convert_list_of_objects_into_list_of_strings(list_of_objects, key):
 
 def create_playing_next_string(queued_video_titles: list):
 
-    playing_next_string = f"{visuals_nonempty_queue_header_message}\n"
+    playing_next_string = f"{VISUALS_NONEMPTY_QUEUE_HEADER_MESSAGE}\n"
     most_queued_videos_to_display = 5
 
     for index, video_title in enumerate(queued_video_titles):
@@ -48,7 +48,7 @@ def create_playing_next_string(queued_video_titles: list):
         playing_next_string += f"{len(queued_video_titles) - most_queued_videos_to_display} more video(s) queued..."
 
     if len(queued_video_titles) <= visuals_state['is_video_currently_playing']:
-        playing_next_string += visuals_empty_queue_next_up_message
+        playing_next_string += VISUALS_EMPTY_QUEUE_NEXT_UP_MESSAGE
 
     return playing_next_string
 
@@ -67,7 +67,7 @@ def update_playing_next():
 def update_status_text():
     if visuals_state["is_bertha_on_cooldown"]:
         visuals_state[
-            "currently_displayed_status_text"] = f"Bertha2 is cooling down for the next {solenoid_cooldown_s} seconds, please wait."
+            "currently_displayed_status_text"] = f"Bertha2 is cooling down for the next {SOLENOID_COOLDOWN_S} seconds, please wait."
         visuals_state["currently_playing_video_path"] = ""
 
     elif visuals_state["queued_video_metadata_objects"] != []:  # if there are videos in the queue
@@ -78,11 +78,11 @@ def update_status_text():
         logger.debug(visuals_state["queued_video_metadata_objects"][0])
 
     elif visuals_state["queued_video_metadata_objects"] == []:  # there aren't any videos to be played
-        visuals_state["currently_displayed_status_text"] = no_video_playing_text
+        visuals_state["currently_displayed_status_text"] = NO_VIDEO_PLAYING_TEXT
         visuals_state["currently_playing_video_path"] = ""
 
-    update_obs_text_source_value(status_text_obs_source_id, visuals_state["currently_displayed_status_text"])
-    update_obs_video_source_value(playing_video_obs_source_id, visuals_state["currently_playing_video_path"])
+    update_obs_text_source_value(STATUS_TEXT_OBS_SOURCE_ID, visuals_state["currently_displayed_status_text"])
+    update_obs_video_source_value(PLAYING_VIDEO_OBS_SOURCE_ID, visuals_state["currently_playing_video_path"])
 
     visuals_state["does_status_text_need_update"] = False
 

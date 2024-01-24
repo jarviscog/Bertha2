@@ -1,48 +1,93 @@
 import argparse
-from os import getcwd, getenv
+from os import getenv, getcwd
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-
-cwd = getcwd()
-
-solenoid_cooldown_s = 30
-
-midi_file_path = cwd / Path("tmp-files") / Path("midi")
-audio_file_path = cwd / Path("tmp-files") / Path("audio")
-video_file_path = cwd / Path("tmp-files") / Path("video")
-
-dirs = [midi_file_path, audio_file_path, video_file_path]  # add any other file paths to this variable
-
-queue_save_file = "saved_queues"
-
-channel = 'berthatwo'  # the channel of which chat is being monitored
-
 load_dotenv("secrets.env")
 
-# Twitch Secrets
-nickname = getenv("NICKNAME")
-token = getenv("TOKEN")
-client_id = getenv("CLIENT_ID")
 
-proxy_port = getenv("PROXY_PORT")
-proxy_username = getenv("PROXY_USERNAME")
-proxy_password = getenv("PROXY_PASSWORD")
+# Bertha2 Details
+cwd = getcwd()
+TEMPORARY_FILES_PATH = Path("temp")
+MIDI_FILE_PATH = os.path.join(cwd, TEMPORARY_FILES_PATH, "midi")
+AUDIO_FILE_PATH = os.path.join(cwd, TEMPORARY_FILES_PATH, "audio")
+VIDEO_FILE_PATH = os.path.join(cwd, TEMPORARY_FILES_PATH, "video")
 
-cuss_words_file_name = "cuss_words.txt"
+DIRS = [MIDI_FILE_PATH, AUDIO_FILE_PATH, VIDEO_FILE_PATH]  # add any other file paths to this variable
 
-obs_websocket_url = 'ws://127.0.0.1:4444'
+CUSS_WORDS_FILE_NAME = os.path.join(cwd, "cuss_words.txt")
+QUEUE_SAVE_FILE = "saved_queues"
 
-no_video_playing_text = "Nothing currently playing."
+SOLENOID_COOLDOWN_S = 30
 
-status_text_obs_source_id = "current_song"
-playing_video_obs_source_id = "playing_video"
+def import_cuss_words():
+    global cuss_words
 
-visuals_empty_queue_next_up_message = "Nothing queued."
-visuals_nonempty_queue_header_message = "Next Up:"
+    try:
+        with open(CUSS_WORDS_FILE_NAME) as f:
+            words = f.read()
+            word_list = words.split("\n")
+            word_list = list(filter(None, word_list))  # Remove blank elements (e.g. "") from array
+            return word_list
+    except Exception as e:
+        print(f"CUSS WORDS NOT ENABLED {e}")
+        return []
 
-default_visuals_state = {
-    "currently_displayed_status_text": no_video_playing_text,
+CUSS_WORDS = import_cuss_words()
+
+
+# Initialize arguments
+parser = argparse.ArgumentParser(prog='Bertha2')
+parser.add_argument('--disable_hardware', action='store_true')  # checks if the `--disable_hardware` flag is used
+parser.add_argument("--log", action="store")
+parser.add_argument("--debug_visuals", action='store_true')
+parser.add_argument("--debug_converter", action='store_true')
+parser.add_argument("--debug_hardware", action='store_true')
+parser.add_argument("--debug_chat", action='store_true')
+cli_args = parser.parse_args()
+
+
+# Logging Formatter
+# Easily create ANSI escape codes here: https://ansi.gabebanks.net
+MAGENTA = "\x1b[35;49;1m"
+BLUE = "\x1b[34;49;1m"
+GREEN = "\x1b[32;49;1m"
+RESET = "\x1b[0m"
+LOG_FORMAT = f"{BLUE}[%(levelname)s]{MAGENTA}[%(name)s]{RESET} %(message)s     {GREEN}[%(filename)s:%(lineno)d]{RESET}"
+
+
+# Twitch Details
+CHANNEL = 'berthatwo'  # the channel of which chat is being monitored
+
+# Twitch Login Details
+NICKNAME = getenv("NICKNAME")
+TOKEN = getenv("TOKEN")
+CLIENT_ID = getenv("CLIENT_ID")
+
+PROXY_PORT = getenv("PROXY_PORT")
+PROXY_USERNAME = getenv("PROXY_USERNAME")
+PROXY_PASSWORD = getenv("PROXY_PASSWORD")
+
+
+# OBS
+OBS_WEBSOCKET_URL = 'ws://127.0.0.1:4444'
+SCENE_NAME = 'Scene'
+MEDIA_NAME = 'Video'
+MAX_VIDEO_TITLE_LENGTH_QUEUE = 45
+MAX_VIDEO_TITLE_LENGTH_CURRENT = 45
+VIDEO_WIDTH = 1280
+VIDEO_HEIGHT = 720
+
+NO_VIDEO_PLAYING_TEXT = "Nothing currently playing."
+VISUALS_EMPTY_QUEUE_NEXT_UP_MESSAGE = "Nothing queued."
+VISUALS_NONEMPTY_QUEUE_HEADER_MESSAGE = "Next Up:"
+STATUS_TEXT_OBS_SOURCE_ID = "current_song"
+PLAYING_VIDEO_OBS_SOURCE_ID = "playing_video"
+
+
+DEFAULT_VISUALS_STATE = {
+    "currently_displayed_status_text": NO_VIDEO_PLAYING_TEXT,
     "currently_playing_video_path": "",
     "currently_displayed_next_up": "",
     "queued_video_metadata_objects": [],  # 0th subscript in this list is the currently playing video
@@ -52,45 +97,3 @@ default_visuals_state = {
     "does_status_text_need_update": True
 }
 
-
-def import_cuss_words():
-    global cuss_words
-
-    try:
-        with open(cuss_words_file_name) as f:
-            words = f.read()
-            word_list = words.split("\n")
-            word_list = list(filter(None, word_list))  # Remove blank elements (e.g. "") from array
-            return word_list
-    except Exception as e:
-        # TODO Log this
-        print(f"CUSS WORDS NOT ENABLED {e}")
-        return []
-
-cuss_words = import_cuss_words()
-
-# Initialize command line args
-parser = argparse.ArgumentParser(prog='Bertha2')
-parser.add_argument('--disable_hardware', action='store_true')  # checks if the `--disable_hardware` flag is used
-parser.add_argument("--log", action="store")
-parser.add_argument("--debug_visuals", action='store_true')
-parser.add_argument("--debug_converter", action='store_true')
-parser.add_argument("--debug_hardware", action='store_true')
-parser.add_argument("--debug_chat", action='store_true')
-
-cli_args = parser.parse_args()
-
-# Logging Formatter
-# Easily create ANSI escape codes here: https://ansi.gabebanks.net
-magenta = "\x1b[35;49;1m"
-blue = "\x1b[34;49;1m"
-green = "\x1b[32;49;1m"
-reset = "\x1b[0m"
-log_format = f"{blue}[%(levelname)s]{magenta}[%(name)s]{reset} %(message)s     {green}[%(filename)s:%(lineno)d]{reset}"
-
-scene_name = 'Scene'
-media_name = 'Video'
-max_video_title_length_queue = 45
-max_video_title_length_current = 45
-video_width = 1280
-video_height = 720

@@ -2,11 +2,10 @@ import socket
 
 from pytube import YouTube
 
-from bertha2.settings import channel, nickname, token
+from bertha2.settings import CHANNEL, NICKNAME, TOKEN
 from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode
 
 logger = initialize_module_logger(__name__)
-
 
 def is_valid_youtube_video(user_input):
     # print(user_input)
@@ -91,7 +90,7 @@ def chat_process(link_q):
     :return:
     """
 
-    logger.debug(f"twitch token, nickname: {token}, {nickname}")
+    logger.debug(f"twitch token, nickname: {TOKEN}, {NICKNAME}")
 
     # https://dev.twitch.tv/docs/irc
 
@@ -104,8 +103,8 @@ def chat_process(link_q):
     if "CAP * NAK" in resp:
         logger.critical("Capabilities couldn't be requested.")
         raise ConnectionRefusedError
-    sock.send(f"PASS {token}\n".encode("utf-8"))  # auth user
-    sock.send(f"NICK {nickname}\n".encode("utf-8"))
+    sock.send(f"PASS {TOKEN}\n".encode("utf-8"))  # auth user
+    sock.send(f"NICK {NICKNAME}\n".encode("utf-8"))
     resp = sock.recv(2048).decode("utf-8")  # check if auth was successful
     print(resp)
     if "Improperly formatted auth" in resp:
@@ -114,11 +113,11 @@ def chat_process(link_q):
     if "Login authentication failed" in resp:
         logger.critical("Login authentication failed.")
         raise ConnectionRefusedError
-    sock.send(f"JOIN #{channel}\n".encode("utf-8"))  # join channel
+    sock.send(f"JOIN #{CHANNEL}\n".encode("utf-8"))  # join channel
     resp = sock.recv(2048).decode("utf-8")  # get join messages
     logger.debug(resp)
 
-    logger.info(f"Ready and waiting for twitch commands in [{channel}]...")
+    logger.info(f"Ready and waiting for twitch commands in [{CHANNEL}]...")
 
     while True:
         try:
@@ -150,7 +149,7 @@ def chat_process(link_q):
                     link_q.put(message_object["command_arg"])
                     logger.info(f"The video follow video has been queued: {message_object['command_arg']}")
 
-                    send_privmsg(sock, f"Your video ({message_object['command_arg']}) has been queued.", channel,
+                    send_privmsg(sock, f"Your video ({message_object['command_arg']}) has been queued.", CHANNEL,
                                  reply_id=message_object["msg_id"])
 
                 else:
@@ -158,7 +157,7 @@ def chat_process(link_q):
 
                     send_privmsg(sock,
                                  f"Sorry, {message_object['command_arg']} is not a valid YouTube link. It's either an invalid link or it's age restricted.",
-                                 channel,
+                                 CHANNEL,
                                  reply_id=message_object["msg_id"])
                 ################
 

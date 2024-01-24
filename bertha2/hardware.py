@@ -11,11 +11,11 @@ import serial
 
 import logging
 
-from bertha2.settings import cli_args, solenoid_cooldown_s, log_format
+from bertha2.settings import cli_args, SOLENOID_COOLDOWN_S, LOG_FORMAT
 from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode, initialize_root_logger
 
 # logger = initialize_module_logger(__name__)
-logging.basicConfig(level=10, format=log_format)
+logging.basicConfig(level=10, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 ### GLOBAL VARIABLES ###
@@ -292,7 +292,7 @@ def hardware_process_loop(hardware_visuals_conn, play_q):
     asyncio.run(play_midi_file(filepath))
     hardware_visuals_conn.send("cooldown")
     # wait to cool down solenoids
-    time.sleep(solenoid_cooldown_s)
+    time.sleep(SOLENOID_COOLDOWN_S)
     hardware_visuals_conn.send("waiting")
     logger.info("Finished playback of song on hardware")
 

@@ -154,5 +154,5 @@ dmypy.json
 node_modules
 # Pyre type checker
 .pyre/
-/cuss_words.txt
+/bertha2/cuss_words.txt
 /tmp-files/

@@ -4,7 +4,7 @@ import signal
 from multiprocessing import Process, Queue, Event, Pipe
 from pathlib import Path
 
-from bertha2.settings import dirs, queue_save_file
+from bertha2.settings import DIRS, QUEUE_SAVE_FILE
 from bertha2.utils.logs import initialize_root_logger
 
 os.environ['IMAGEIO_VAR_NAME'] = 'ffmpeg'
@@ -18,8 +18,8 @@ from bertha2.hardware import hardware_process
 from bertha2.visuals import visuals_process
 
 
-def create_dirs(dirs):
-    for dir in dirs:
+def create_dirs(DIRS):
+    for dir in DIRS:
         file_dir = Path(dir)
         if not os.path.exists(file_dir):
             os.makedirs(file_dir)
@@ -47,7 +47,7 @@ def save_queues(lq, pq):
 
     logger.debug(backup_file)
 
-    with open(f'{queue_save_file}.json', 'w', encoding='utf-8') as f:
+    with open(f'{QUEUE_SAVE_FILE}.json', 'w', encoding='utf-8') as f:
         json.dump(backup_file, f, ensure_ascii=False, indent=4)
 
     logger.info(f"Saved queues to database.")
@@ -59,7 +59,7 @@ def load_queue(queue_name):
     q = Queue()
 
     try:
-        with open(f'{queue_save_file}.json') as f:
+        with open(f'{QUEUE_SAVE_FILE}.json') as f:
             o = json.load(f)
 
         logger.debug(o[queue_name])
@@ -76,7 +76,7 @@ def load_queue(queue_name):
 if __name__ == '__main__':
 
     logger.info(f"Initializing Bertha2...")
-    create_dirs(dirs)
+    create_dirs(DIRS)
 
     # Set signal handling of SIGINT to ignore mode.
     default_handler = signal.getsignal(signal.SIGINT)
