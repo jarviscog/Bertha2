@@ -21,7 +21,7 @@ from bertha2.converter import converter_process
 from bertha2.hardware import hardware_process
 from bertha2.visuals import visuals_process
 
-from bertha2.settings import DIRS, QUEUE_SAVE_FILE
+from bertha2.settings import DIRS, QUEUE_SAVE_FILENAME
 from bertha2.utils.logs import initialize_root_logger
 
 os.environ['IMAGEIO_VAR_NAME'] = 'ffmpeg'
@@ -38,39 +38,39 @@ def create_dirs(DIRS):
     logger.info(f"Created directories")
 
 
-def save_queues(lq, pq):
+def save_queues(link_q: Queue, play_q: Queue):
     logger.info(f"Saving queues to database.")
 
     ll = []
     pl = []
+    
+    while not link_q.empty():
+        ll.append(link_q.get())
 
-    while lq.empty() == False:
-        ll.append(lq.get())
-
-    while pq.empty() == False:
-        pl.append(pq.get())
+    while not play_q.empty():
+        pl.append(play_q.get())
 
     # save q to json file
-    backup_file = {
+    backup_file_contents = {
         "play_q": pl,
         "link_q": ll
     }
 
-    logger.debug(backup_file)
+    logger.debug(backup_file_contents)
 
-    with open(f'{QUEUE_SAVE_FILE}.json', 'w', encoding='utf-8') as f:
-        json.dump(backup_file, f, ensure_ascii=False, indent=4)
+    with open(QUEUE_SAVE_FILENAME, 'w', encoding='utf-8') as file:
+        json.dump(backup_file_contents, file, ensure_ascii=False, indent=4)
 
     logger.info(f"Saved queues to database.")
 
 
-def load_queue(queue_name):
+def load_queue(queue_name: str):
     logger.info(f"Loading queue: {queue_name}")
 
     q = Queue()
 
     try:
-        with open(f'{QUEUE_SAVE_FILE}.json') as f:
+        with open(QUEUE_SAVE_FILENAME) as f:
             contents = json.load(f)
 
         logger.debug(contents[queue_name])

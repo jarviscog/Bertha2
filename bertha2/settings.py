@@ -16,8 +16,8 @@ VIDEO_FILE_PATH = os.path.join(cwd, TEMPORARY_FILES_PATH, "video")
 
 DIRS = [MIDI_FILE_PATH, AUDIO_FILE_PATH, VIDEO_FILE_PATH]  # add any other file paths to this variable
 
-CUSS_WORDS_FILE_NAME = os.path.join(cwd, "cuss_words.txt")
-QUEUE_SAVE_FILE = "saved_queues"
+CUSS_WORDS_FILENAME = os.path.join(cwd, "cuss_words.txt")
+QUEUE_SAVE_FILENAME = "saved_queues.json"
 
 SOLENOID_COOLDOWN_S = 30
 
@@ -25,7 +25,7 @@ def import_cuss_words():
     global cuss_words
 
     try:
-        with open(CUSS_WORDS_FILE_NAME) as f:
+        with open(CUSS_WORDS_FILENAME) as f:
             words = f.read()
             word_list = words.split("\n")
             word_list = list(filter(None, word_list))  # Remove blank elements (e.g. "") from array
