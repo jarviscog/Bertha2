@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+
+""" Plays MIDI files on the physical hardware through a connected Arduino """
+
 import asyncio
 import socket
 import struct
@@ -189,7 +193,7 @@ def power_draw_function(velocity, time_passed):
     return pwm_at_t
 
 
-async def trigger_note(note, init_note_delay=0, velocity=255, hold_note_time=1):
+async def trigger_note(note, init_note_delay=0.0, velocity=255, hold_note_time=1.0):
     # delay until the note should be turned on
     await asyncio.sleep(init_note_delay)
 

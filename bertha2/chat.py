@@ -1,11 +1,14 @@
-import socket
 
+""" Reads commands from Twitch chat, and adds the parsed video links to a queue """
+
+import socket
 from pytube import YouTube
 
 from bertha2.settings import CHANNEL, NICKNAME, TOKEN
 from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode
 
 logger = initialize_module_logger(__name__)
+
 
 def is_valid_youtube_video(user_input):
     # print(user_input)

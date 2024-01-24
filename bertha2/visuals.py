@@ -1,7 +1,13 @@
+#!/usr/bin/env python
+
+""" Updates OBS to reflect the current state of the program """
+
 from multiprocessing import connection
 
-from bertha2.settings import CUSS_WORDS, SOLENOID_COOLDOWN_S, MAX_VIDEO_TITLE_LENGTH_QUEUE, NO_VIDEO_PLAYING_TEXT, \
-    STATUS_TEXT_OBS_SOURCE_ID, PLAYING_VIDEO_OBS_SOURCE_ID, VISUALS_NONEMPTY_QUEUE_HEADER_MESSAGE, VISUALS_EMPTY_QUEUE_NEXT_UP_MESSAGE, DEFAULT_VISUALS_STATE
+from bertha2.settings import CUSS_WORDS, SOLENOID_COOLDOWN_S, \
+        MAX_VIDEO_TITLE_LENGTH_QUEUE, NO_VIDEO_PLAYING_TEXT, \
+        STATUS_TEXT_OBS_SOURCE_ID, PLAYING_VIDEO_OBS_SOURCE_ID, \
+        VISUALS_NONEMPTY_QUEUE_HEADER_MESSAGE, VISUALS_EMPTY_QUEUE_NEXT_UP_MESSAGE, DEFAULT_VISUALS_STATE
 from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode
 from bertha2.utils.obs import update_obs_text_source_value, update_obs_video_source_value
 

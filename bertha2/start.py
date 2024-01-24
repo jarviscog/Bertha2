@@ -1,8 +1,25 @@
+#!/usr/bin/env python
+
+""" The main runner for Bertha2
+Opens up multiple processes that run coresponding tasks. 
+- Reading commands from Twitch chat
+- Converting videos to mp4 and MIDI
+- Controlling hardware to play MIDI files
+- Reflecing the state of the system in OBS
+
+"""
+
 import json
 import os
 import signal
 from multiprocessing import Process, Queue, Event, Pipe
 from pathlib import Path
+
+# Get all of the processes that will run async
+from bertha2.chat import chat_process
+from bertha2.converter import converter_process
+from bertha2.hardware import hardware_process
+from bertha2.visuals import visuals_process
 
 from bertha2.settings import DIRS, QUEUE_SAVE_FILE
 from bertha2.utils.logs import initialize_root_logger
@@ -12,10 +29,6 @@ os.environ['IMAGEIO_VAR_NAME'] = 'ffmpeg'
 logger = initialize_root_logger(__name__)
 
 
-from bertha2.chat import chat_process
-from bertha2.converter import converter_process
-from bertha2.hardware import hardware_process
-from bertha2.visuals import visuals_process
 
 
 def create_dirs(DIRS):
