@@ -29,8 +29,6 @@ os.environ['IMAGEIO_VAR_NAME'] = 'ffmpeg'
 logger = initialize_root_logger(__name__)
 
 
-
-
 def create_dirs(DIRS):
     for dir in DIRS:
         file_dir = Path(dir)
@@ -73,12 +71,12 @@ def load_queue(queue_name):
 
     try:
         with open(f'{QUEUE_SAVE_FILE}.json') as f:
-            o = json.load(f)
+            contents = json.load(f)
 
-        logger.debug(o[queue_name])
+        logger.debug(contents[queue_name])
 
         # save it into a queue
-        for item in o[queue_name]:
+        for item in contents[queue_name]:
             q.put(item)
     except Exception as ee:
         logger.critical(f"Queue could not be loaded. {ee}")
@@ -95,34 +93,34 @@ if __name__ == '__main__':
     default_handler = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    link_q = load_queue("link_q")  # we need a queue for YouTube links
-    play_q = load_queue("play_q")  # this is the queue of ready to play videos
+    link_q = load_queue("link_q")  # Queue of YouTube links to convert
+    play_q = load_queue("play_q")  # Queue of ready-to-play videos
 
-    # converter -> visuals connection
+    # Pipe: converter -> visuals connection
     cv_parent_conn, cv_child_conn = Pipe()
-    # hardware -> visuals connection. used for the hardware process to tell the visuals process when its doing things
+    # Pipe: hardware -> visuals connection. Used for the hardware process to tell the visuals process when its doing things
     hv_child_conn, hv_parent_conn = Pipe()
 
     sigint_e = Event()
-    # TODO: if processes crash, restart them automatically
-    # why does visuals have the parent and child conns, when it is only receiving data?
-    input_p = Process(target=chat_process, args=(link_q,))
+    
+    # Connect each process that can be. After, it is the process's responsibility to not crash
+    # TODO: Write a fuction for each to see if it can be booted up
+    #   e.g. Is b2 connected, can we connect to obs?
+    # TODO: why does visuals have the parent and child conns, when it is only receiving data?
+    chat_p = Process(target=chat_process, args=(link_q,))
     converter_p = Process(target=converter_process, args=(sigint_e, cv_child_conn, link_q, play_q,))
     hardware_p = Process(target=hardware_process, args=(sigint_e, hv_parent_conn, play_q,))
     visuals_p = Process(target=visuals_process, args=(cv_parent_conn, hv_child_conn,))
 
-    input_p.daemon = True
-    converter_p.daemon = True
-    hardware_p.daemon = True
-    visuals_p.daemon = True
+    processes = [chat_p, converter_p, hardware_p, visuals_p]
 
-    input_p.start()
-    converter_p.start()
-    hardware_p.start()
-    visuals_p.start()
+    # Start all of the processes
+    for process in processes:
+        process.daemon = True
+        process.start()
 
     # Since we spawned all the necessary processes already,
-    # restore default signal handling for the parent process.
+    #   restore default signal handling for the parent process.
     signal.signal(signal.SIGINT, default_handler)
 
     try:
