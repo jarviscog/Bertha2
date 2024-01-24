@@ -1,28 +1,23 @@
 # Custom
 example.png
 .DS_Store
-tmp-files
 test.py
 anothertest.py
 *.mp4
 *.mkv
-*.midi
 *.db
-files/midi/unverified/
-files/midi/verified/
 files/midi/tests/pop/
 files/midi/tests/video-games/
-files/audio/
 secrets.env
+temp/
 **/.DS_Store
-/files/midi-files/
 /saved_queues.json
+/cuss_words.txt
 
 
 # IDE
 .idea
 .code-workspace
-
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -154,5 +149,3 @@ dmypy.json
 node_modules
 # Pyre type checker
 .pyre/
-/bertha2/cuss_words.txt
-/tmp-files/
