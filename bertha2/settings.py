@@ -4,22 +4,36 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-load_dotenv("secrets.env")
+if os.path.isfile("secrets.env"):
+    load_dotenv("secrets.env")
+else:
+    print("secrets.env not found!")
+    raise FileNotFoundError;
 
 
-# Bertha2 Details
+# === Bertha2 Details ===
 cwd = getcwd()
 TEMPORARY_FILES_PATH = Path("temp")
 MIDI_FILE_PATH = os.path.join(cwd, TEMPORARY_FILES_PATH, "midi")
 AUDIO_FILE_PATH = os.path.join(cwd, TEMPORARY_FILES_PATH, "audio")
 VIDEO_FILE_PATH = os.path.join(cwd, TEMPORARY_FILES_PATH, "video")
-
 DIRS = [MIDI_FILE_PATH, AUDIO_FILE_PATH, VIDEO_FILE_PATH]  # add any other file paths to this variable
 
-CUSS_WORDS_FILENAME = os.path.join(cwd, "cuss_words.txt")
 QUEUE_SAVE_FILENAME = "saved_queues.json"
 
+# Chat
+# TODO: decide on an appropriate maximum video length
+MAX_VIDEO_LENGTH_SECONDS = 360
+
+# Converter
+CUSS_WORDS_FILENAME = os.path.join(cwd, "cuss_words.txt")
+
+
+# Hardware
 SOLENOID_COOLDOWN_S = 30
+
+
+# Visuals
 
 def import_cuss_words():
     global cuss_words
@@ -59,6 +73,8 @@ LOG_FORMAT = f"{BLUE}[%(levelname)s]{MAGENTA}[%(name)s]{RESET} %(message)s     {
 
 # Twitch Details
 CHANNEL = 'berthatwo'  # the channel of which chat is being monitored
+
+# TODO: Check if secrets.env can be found
 
 # Twitch Login Details
 NICKNAME = getenv("NICKNAME")
