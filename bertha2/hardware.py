@@ -1,42 +1,38 @@
-"""
-what this file should do:
-- read midi file (take a midi file location as input)
-- convert to data playable by the hardware
-- play on hardware
-"""
+#!/usr/bin/env python
 
-import os
+""" Plays MIDI files on the physical hardware through a connected Arduino """
+
 import asyncio
-import subprocess
-from pprint import pprint
-import mido
-import math
-import datetime
-import atexit
-import serial
+import socket
 import struct
+import subprocess
 import time
-import socket  # TODO: This shouldn't be imported by default. But this isn't super important
+import os
+import random
+
+import mido
+import serial
+
 import logging
-from settings import cli_args, solenoid_cooldown_s
 
+from bertha2.settings import cli_args, SOLENOID_COOLDOWN_S, LOG_FORMAT
+from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode, initialize_root_logger
 
-### LOGGING SETUP ###
+# logger = initialize_module_logger(__name__)
+logging.basicConfig(level=10, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
-if cli_args.debug_hardware:  # If the debug flag is set high, enable debug level logging
-    logging.getLogger(__name__).setLevel(logging.DEBUG)
 
 ### GLOBAL VARIABLES ###
-starting_note = 48
+starting_note = 41
 number_of_notes = 48
 arduino_connection = None
 sock = None
-TEST_FLAG = False  # TODO: This should be False by default
+TEST_FLAG = False
 
 # TODO: this shouldn't be defined when not in test mode
 last_cl_update = time.time()
 sock = None
-note_values = [0]*number_of_notes
+note_values = [0] * number_of_notes
 
 
 ### TEST PATTERN FUNCTIONS ###
@@ -103,7 +99,7 @@ def generate_hardware_vis(arr, min_val=0, max_val=255, bar_length=30):
         if i % 2:
             out_str += "\n"
         else:
-            out_str+=(" " * 5)
+            out_str += (" " * 5)
 
     return out_str
 
@@ -122,7 +118,6 @@ def update_cl_vis(out_str):
 
 ### IMPORTANT MAIN FUNCTIONS ###
 def update_solenoid_value(note_address, pwm_value):
-
     if TEST_FLAG:  # when testing, output doesn't go to the actual hardware, it's just visualized on the command line
 
         # this will ensure pwm_value does not exceed the bounds of 8-bit int
@@ -138,7 +133,6 @@ def update_solenoid_value(note_address, pwm_value):
         if note_address > number_of_notes:
             logger.debug(f"too high! for now... {note_address}")
             note_address -= 24
-
 
         # this will ensure only valid notes are toggled, preventing memory address not found errors
         if (note_address < 0) or (note_address > number_of_notes - 1) or (note_address >= 255): return
@@ -164,17 +158,17 @@ def update_solenoid_value(note_address, pwm_value):
             pwm_value = 1
 
         # if a note is up to an octave below what is available to be played, shift it up an octave
-        if note_address < 0+1:
+        if note_address < 0 + 1:
             # logger.debug(f"too low! for now... {note_address}")
             note_address += 24
 
         # if a note is up to an octave below what is available to be played, shift it up an octave
-        if note_address > number_of_notes+1:
+        if note_address > number_of_notes + 1:
             # logger.debug(f"too high! for now... {note_address}")
             note_address -= 24
 
         # this will ensure only valid notes are toggled, preventing memory address not found errors
-        if (note_address < 0+1) or (note_address > number_of_notes+1) or (note_address >= 254): return
+        if (note_address < 0 + 1) or (note_address > number_of_notes + 1) or (note_address >= 254): return
 
         logger.debug(f"{note_address}, {int(pwm_value)}")
         if arduino_connection is not None:
@@ -187,8 +181,8 @@ def power_draw_function(velocity, time_passed):
 
     cutoff = 0.1  # TODO: find a value for this variable. seconds
     minimum_power = 100  # TODO: find a value for this variable. minimum amount of power required to depress note
-    minimum_hold = 100  # TODO: find a value for this variable. minimum amount of power to keep depressing the note after it's already been depressed initially
-    maximum_power = 255
+    minimum_hold = 50  # TODO: find a value for this variable. minimum amount of power to keep depressing the note after it's already been depressed initially
+    maximum_power = 150
     maximum_velocity = 127
 
     if time_passed < cutoff:
@@ -199,8 +193,7 @@ def power_draw_function(velocity, time_passed):
     return pwm_at_t
 
 
-async def trigger_note(note, init_note_delay=0, velocity=255, hold_note_time=1):
-
+async def trigger_note(note, init_note_delay=0.0, velocity=255, hold_note_time=1.0):
     # delay until the note should be turned on
     await asyncio.sleep(init_note_delay)
 
@@ -222,7 +215,6 @@ async def trigger_note(note, init_note_delay=0, velocity=255, hold_note_time=1):
 
 
 async def play_midi_file(midi_filename):
-
     # TODO: be able to start playback from a certain point in the video (10 seconds in)
     # TODO: add a 30 second limit to video playback
 
@@ -231,7 +223,7 @@ async def play_midi_file(midi_filename):
     input_time = 0
     mid = mido.MidiFile(midi_filename)
     ticks_per_beat = mid.ticks_per_beat
-    tempo = 500000 # this is the default MIDI tempo
+    tempo = 500000  # this is the default MIDI tempo
     temp_lengs = {}
 
     for msg in mido.merge_tracks(mid.tracks):
@@ -242,14 +234,17 @@ async def play_midi_file(midi_filename):
         input_time += mido.tick2second(msg.time, ticks_per_beat, tempo)
 
         if isinstance(msg, mido.MetaMessage):
-            continue
+            if msg.type == 'set_tempo':
+                tempo = msg.tempo
+            else:
+                continue
         else:
-            if msg.type == 'note_on':
+            if (msg.type == 'note_on') and (msg.velocity != 0):
                 note = msg.note - starting_note
                 logger.debug(f"note_on {note} {msg.velocity} {input_time}")
                 temp_lengs.update({note: {"velocity": msg.velocity, "init_note_delay": input_time}})
 
-            elif msg.type == 'note_off':
+            elif (msg.type == 'note_off') or ((msg.type == 'note_on') and (msg.velocity == 0)):
                 note = msg.note - starting_note
                 logger.debug(f"note_off {note}")
                 # logger.debug(temp_lens)
@@ -267,92 +262,128 @@ async def play_midi_file(midi_filename):
     await asyncio.gather(*tasks)
 
 
-def hardware_process(sigint_e, hardware_visuals_conn, play_q, title_q,):
+def create_connection_with_piano():
+    global arduino_connection
 
-    logger.debug(f"Debug mode enabled for {__name__}")
+    # Find the usb port that has something plugged in to use from /dev/ (only works with unix)
+    # port can be found via the command: ls /dev/
+    # port_to_use = os.popen("ls -a /dev/cu.usbserial*", ).read().split('\n')[0]
+
+    try:
+        potential_ports = subprocess.check_output(["ls -a /dev/cu.usbserial*"], shell=True,
+                                                  stderr=subprocess.DEVNULL).decode('ascii')
+
+        logger.debug(f"Setting serial up")
+        arduino_connection = serial.Serial()
+        port_to_use = potential_ports.split("\n")[0]
+        logger.debug(f"Setting Arduino port to: {port_to_use}")
+        arduino_connection.port = port_to_use
+        logger.debug(f"Setting Arduino baudrate and timeout: {port_to_use}")
+        arduino_connection.baudrate = 115200
+        arduino_connection.timeout = 0.1
+        logger.debug(f"Connecting to arduino on port:{port_to_use}")
+        arduino_connection.open()
+
+    except:
+        logger.warning("Unable to connect to Arduino. Is it plugged in?")
+        raise ConnectionRefusedError
+
+
+def hardware_process_loop(hardware_visuals_conn, play_q):
+    filepath = play_q.get(timeout=10)
+    logger.info("Starting playback of song on hardware")
+    hardware_visuals_conn.send("playing")
+    asyncio.run(play_midi_file(filepath))
+    hardware_visuals_conn.send("cooldown")
+    # wait to cool down solenoids
+    time.sleep(SOLENOID_COOLDOWN_S)
+    hardware_visuals_conn.send("waiting")
+    logger.info("Finished playback of song on hardware")
+
+
+def create_connection_with_terminal():
+    global sock
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect(('127.0.0.1', 8001))
+    except:
+        logger.error(f"Socket connection refused. Run netcat with `nc -dkl 8001`.")
+        raise ConnectionRefusedError
+
+
+def hardware_process(sigint_e, hardware_visuals_conn, play_q, ):
+    log_if_in_debug_mode(logger, __name__)
 
     global TEST_FLAG
     TEST_FLAG = cli_args.disable_hardware
+
     if TEST_FLAG:
-        global sock
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        try:
-            sock.connect(('127.0.0.1', 8001))
-        except:
-            logger.error(f"Socket connection refused. Run netcat with `nc -dkl 8001`.")
-            raise ConnectionRefusedError
+        create_connection_with_terminal()
 
     else:  # test mode is disabled
-        global arduino_connection
-
-        # Find the usb port that has something plugged in to use from /dev/ (only works with unix)
-        # port can be found via the command: ls /dev/
-        # port_to_use = os.popen("ls -a /dev/cu.usbserial*", ).read().split('\n')[0]
-
-        try:
-            # TODO Why is this running multiple times? THis only gets imported by start.py once
-            potential_ports = subprocess.check_output(["ls -a /dev/cu.usbserial*"], shell=True,
-                                                      stderr=subprocess.DEVNULL).decode('ascii')
-
-            logger.info(f"Setting serial up")
-            arduino_connection = serial.Serial()
-            # pprint(potential_ports)
-            port_to_use = potential_ports.split("\n")[0]
-            logger.info(f"Setting Arduino port to: {port_to_use}")
-            arduino_connection.port = port_to_use
-            logger.info(f"Setting Arduino baudrate and timeout: {port_to_use}")
-            arduino_connection.baudrate = 115200
-            arduino_connection.timeout = 0.1
-            logger.info(f"Connecting to arduino on port:{port_to_use}")
-            arduino_connection.open()
-
-        except:
-            logger.warning("Unable to connect to Arduino. Is it plugged in?")
-            # TODO: should we end the program here? or keep searching for an arduino to be connected?
-            return
-
+        create_connection_with_piano()
 
     while not sigint_e.is_set():
         try:
-            # title = title_q.get()
-            filepath = play_q.get(timeout=10)
-
-            logger.info("Starting playback of song on hardware")
-
-            asyncio.run(play_midi_file(filepath))
-
-            hardware_visuals_conn.send("wait")
-
-            # wait to cool down solenoids
-            time.sleep(solenoid_cooldown_s)
-
-            hardware_visuals_conn.send("done")
-
-            logger.info("Finished playback of song on hardware")
+            hardware_process_loop(hardware_visuals_conn, play_q)
 
         except:
             pass
     else:
         logger.info("Hardware process has been shut down.")
 
+def play_random_verified_song():
+
+    mypath = "/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/verified"
+    onlyfiles = [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
+
+    random.shuffle(onlyfiles)
+
+    for mid_track in onlyfiles:
+        try:
+            asyncio.run(
+                play_midi_file(f"{mypath}/{mid_track}"))
+            time.sleep(10)
+        except KeyboardInterrupt:
+            time.sleep(3)
+            continue
+
+
+def play_random_real_song():
+
+    mypath = "/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/real"
+    onlyfiles = [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
+
+    random.shuffle(onlyfiles)
+
+    for mid_track in onlyfiles:
+        try:
+            asyncio.run(
+                play_midi_file(f"{mypath}/{mid_track}"))
+            time.sleep(10)
+        except KeyboardInterrupt:
+            time.sleep(3)
+            continue
 
 
 if __name__ == '__main__':
-
     logger.info("Running some tests.")
+
+    create_connection_with_piano()
 
     # asyncio.run(test_every_note())
     # asyncio.run(test_every_note_at_once())
 
     # turn_on_some_notes()  # NOTE: Don't run this with power enabled
 
-    midi_filename = "../files/midi-files/all_notes.mid"
-    # midi_filename = "midi/take5.mid"
-    # midi_filename = "midi/Wii Channels - Mii Channel.mid"
-    # midi_filename = "midi-files/The Entertainer.mid"
-    # midi_filename = "midi/graze_the_roof.mid"
-    # midi_filename = "files/midi/mJdeFEog-YQ.midi"
+    # mid_tracks = ["Pirate.mid"]
+    #
+    # for mid_track in mid_tracks:
+    #     asyncio.run(play_midi_file(f"/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/verified/{mid_track}"))
+    #     time.sleep(10)
 
-    asyncio.run(play_midi_file(midi_filename))
+    # asyncio.run(play_midi_file(f"/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/tests/scale.mid"))
+    # asyncio.run(play_midi_file(f"/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/real/ShakeItOff.mid"))
+    # play_random_real_song()
+
+    play_random_verified_song()

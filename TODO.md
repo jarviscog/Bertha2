@@ -1,5 +1,7 @@
 # v1.0 roadmap
 
+* Re-organize files and dirs
+* Rename start.py to main.py
 * [DONE] Fix Saved Queue
   * Will the queue save videos even if it's in the process of shutting down?
 * [DONE] Modify peak and hold voltage function
@@ -8,13 +10,27 @@
 * [NOT SPECIFIC] If a link that doesn't work gets past initial filter, make sure it doesn't mess everything up.
 * [JARVIS] Make a message saying the bot is down when it closes (i.e. set obs text to something like "bot is offline for maintenance")
 * [JARVIS] Why are other users seeing messages from berthatwo? All responses to !play commands should be whispers
-* [NOT SPECIFIC] Add some serious try catches to this code so things don't go wrong
+* [JARVIS] Add some serious try catches to this code so things don't go wrong
 * [NOT SPECIFIC] Is this queueing every video?
 * [NOT SPECIFIC] Add some better explanations for what is going on (why does your video not immediately appear in next up? why does the bot not respond to only "!play"?)
 * [MALCOLM] Doesn't always save the play queue (like when the hardware isn't working)
 * [MALCOLM] "next up" onscreen element doesn't properly render after a restart. 
+* check for the existence of needed files on launch (cuss_wrds.txt, secrets.env)
 
 READ THIS: https://go.snyk.io/rs/677-THP-415/images/Python_Cheatsheet_whitepaper.pdf
+
+# Testing
+
+* Breaking down into smaller, testable functions.
+* Writing tests for these functions.
+* Jarvis will work on:
+  * chat.py
+  * converter.py
+* Malcolm will work on:
+  * hardware.py
+  * start.py
+  * visuals.py
+
 
 # Some bigger things to implement
 
@@ -60,3 +76,30 @@ READ THIS: https://go.snyk.io/rs/677-THP-415/images/Python_Cheatsheet_whitepaper
 * If visuals.py can't connect to OBS after some time, the program will crash entirely.
   * What should the desired behaviour here be? If it can't connect, should it just wait until it can connect?
 * Enable a GitHub action that cleans up python code?
+
+# Considerations
+
+Warning If a process is killed using Process.terminate() or os.kill() while it is trying to use a Queue, then the data in the queue is likely to become corrupted. This may cause any other process to get an exception when it tries to use the queue later on.
+
+
+
+# Alex's Notes
+
+Alex says...
+
+* Processes shouldn't be controlling each other. They shouldn't be relying on the inputs and outputs of one another.
+  * Instead, there should be one shared memory where all the processes read and write from
+  * If there are errors in one process, they will be propagated
+  * If there is a manager service that delegates tasks to each process, that could work better?
+
+Interactive test: testing that requires a human to validate whether it is working or not
+
+* Write some unit tests (non-interactive testing)
+
+
+## On Unit Testing
+* For larger functions that have much input from upstream functions, test the upstream functions to ensure they're outputting the correct data.
+* Break down larger functions into testable! bite sized pieces. Alex says they shouldn't be larger than the screen and they shouldn't need comments!
+
+
+Use this for mocking API's: https://requests-mock.readthedocs.io/en/latest/index.html (if needed)
