@@ -1,5 +1,3 @@
-import logging
-
 import asyncio
 import simpleobsws
 
@@ -11,8 +9,9 @@ ws = simpleobsws.WebSocketClient(url='ws://127.0.0.1:4444',
 
 
 async def make_request():
-    await ws.connect()  # Make the connection to obs-websocket
-    await ws.wait_until_identified()  # Wait for the identification handshake to complete
+
+    await ws.connect()
+    await ws.wait_until_identified() # Wait for the identification handshake to complete
 
     request = simpleobsws.Request('GetVersion')  # Build a Request object
 

@@ -18,48 +18,43 @@ import logging
 from bertha2.settings import cli_args, SOLENOID_COOLDOWN_S, LOG_FORMAT
 from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode, initialize_root_logger
 
-# logger = initialize_module_logger(__name__)
-# logger.basicConfig(level=10, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
-### GLOBAL VARIABLES ###
-starting_note = 41
-number_of_notes = 48
-arduino_connection = None
-sock = None
+STARTING_NOTE = 41
+NUMBER_OF_NOTES = 48
 TEST_FLAG = False
 
-# TODO: this shouldn't be defined when not in test mode
-last_cl_update = time.time()
+arduino_connection = None
 sock = None
-note_values = [0] * number_of_notes
+
+if TEST_FLAG:
+    last_cl_update = time.time()
+    note_values = [0] * NUMBER_OF_NOTES
 
 
-### TEST PATTERN FUNCTIONS ###
-async def test_every_note(hold_note_time=0.25):
+async def test_every_note(hold_note_time=0.25) -> None:
     tasks = []
     input_time = 0
 
-    for note in range(number_of_notes):
+    for note in range(NUMBER_OF_NOTES):
         tasks.append(trigger_note(note, input_time, 127, hold_note_time))
         input_time += hold_note_time
 
     await asyncio.gather(*tasks)
 
 
-async def test_every_note_at_once(hold_note_time=10, number_of_notes=5):
+async def test_every_note_at_once(hold_note_time=10, number_of_notes=5) -> None:
     tasks = []
     input_time = 0
 
     for note in range(number_of_notes):
         tasks.append(trigger_note(note, input_time, 127, hold_note_time))
-    # input_time+=(hold_note_time*2)
 
     await asyncio.gather(*tasks)
 
 
-def turn_on_some_notes():
-    for note in range(20):
+def turn_on_n_notes(n: int = 20) -> None:
+    for note in range(n):
         update_solenoid_value(note, 254)
 
 
@@ -84,10 +79,12 @@ def turn_off_note(note):
 '''
 
 
-### TEST MODE FUNCTIONS ###
-def generate_hardware_vis(arr, min_val=0, max_val=255, bar_length=30):
-    # all elements of arr should be ints
-    # generates percentage bars that correspond with output voltage of solenoids
+def generate_terminal_visualization(arr: [int], min_val=0, max_val=255, bar_length=30) -> str:
+    """
+    Generates percentage bars that correspond with output voltage of solenoids
+    :param arr:
+    :return: One 'bar', representing the levels of the sound
+    """
     out_str = ""
 
     for i, el in enumerate(arr):
@@ -104,11 +101,12 @@ def generate_hardware_vis(arr, min_val=0, max_val=255, bar_length=30):
     return out_str
 
 
-def update_cl_vis(out_str):
-    # rate limiting
+def update_terminal_visualization(out_str) -> None:
+    # Rate limiting
     global last_cl_update
     # logger.debug(f"TIME SINCE LAST CALL: {time.time() - last_cl_update}")
-    if time.time() - last_cl_update < 0.005: return
+    if time.time() - last_cl_update < 0.005:
+        return
 
     sock.send(b"\033[H")  # sketchy way of clearing the screen
     sock.send(out_str.encode())
@@ -116,34 +114,35 @@ def update_cl_vis(out_str):
     last_cl_update = time.time()
 
 
-### IMPORTANT MAIN FUNCTIONS ###
-def update_solenoid_value(note_address, pwm_value):
-    if TEST_FLAG:  # when testing, output doesn't go to the actual hardware, it's just visualized on the command line
+def update_solenoid_value(note_address, pwm_value) -> None:
 
-        # this will ensure pwm_value does not exceed the bounds of 8-bit int
-        if pwm_value > 254: pwm_value = 254
-        if pwm_value < 0: pwm_value = 0
+    if TEST_FLAG:  # When testing, output doesn't go to the actual hardware, it's just visualized on the command line
 
-        # if a note is up to an octave below what is available to be played, shift it up an octave
+        # This will ensure pwm_value does not exceed the bounds of 8-bit int
+        if pwm_value > 254:
+            pwm_value = 254
+        if pwm_value < 0:
+            pwm_value = 0
+
+        # If a note is up to an octave below what is available to be played, shift it up an octave
         if note_address < 0:
             logger.debug(f"too low! for now... {note_address}")
             note_address += 24
 
-        # if a note is up to an octave below what is available to be played, shift it up an octave
-        if note_address > number_of_notes:
+        # If a note is up to an octave below what is available to be played, shift it up an octave
+        if note_address > NUMBER_OF_NOTES:
             logger.debug(f"too high! for now... {note_address}")
             note_address -= 24
 
-        # this will ensure only valid notes are toggled, preventing memory address not found errors
-        if (note_address < 0) or (note_address > number_of_notes - 1) or (note_address >= 255): return
+        # This will ensure only valid notes are toggled, preventing memory address not found errors
+        if (note_address < 0) or (note_address > NUMBER_OF_NOTES - 1) or (note_address >= 255):
+            return
 
         note_values[note_address] = pwm_value
 
-        # logger.debug(note_values)
-
-        o = generate_hardware_vis(note_values)
-        # this part of the code will send hardware outputs to an open netcat terminal
-        update_cl_vis(o)
+        # This part of the code will send hardware outputs to an open netcat terminal
+        o = generate_terminal_visualization(note_values)
+        update_terminal_visualization(o)
 
     else:
         # ensure that note_address or pwm_value are always between 1 and 255.
@@ -151,31 +150,32 @@ def update_solenoid_value(note_address, pwm_value):
         note_address += 1
         pwm_value += 1
 
-        # this will ensure pwm_value does not exceed the bounds of 8-bit int
+        # This will ensure pwm_value does not exceed the bounds of 8-bit int
         if pwm_value > 254:
             pwm_value = 254
         if pwm_value < 1:
             pwm_value = 1
 
-        # if a note is up to an octave below what is available to be played, shift it up an octave
+        # If a note is up to an octave below what is available to be played, shift it up an octave
         if note_address < 0 + 1:
             # logger.debug(f"too low! for now... {note_address}")
             note_address += 24
 
-        # if a note is up to an octave below what is available to be played, shift it up an octave
-        if note_address > number_of_notes + 1:
+        # If a note is up to an octave below what is available to be played, shift it up an octave
+        if note_address > NUMBER_OF_NOTES + 1:
             # logger.debug(f"too high! for now... {note_address}")
             note_address -= 24
 
-        # this will ensure only valid notes are toggled, preventing memory address not found errors
-        if (note_address < 0 + 1) or (note_address > number_of_notes + 1) or (note_address >= 254): return
+        # This will ensure only valid notes are toggled, preventing memory address not found errors
+        if (note_address < 0 + 1) or (note_address > NUMBER_OF_NOTES + 1) or (note_address >= 254):
+            return
 
         logger.debug(f"{note_address}, {int(pwm_value)}")
-        if arduino_connection is not None:
+        if arduino_connection:
             arduino_connection.write(struct.pack('>3B', int(note_address), int(pwm_value), int(255)))
 
 
-def power_draw_function(velocity, time_passed):
+def power_draw_function(velocity, time_passed) -> int:
     # create a function that will determine the power emitted at different points in time
     # max output value should be 255?
 
@@ -194,10 +194,10 @@ def power_draw_function(velocity, time_passed):
 
 
 async def trigger_note(note, init_note_delay=0.0, velocity=255, hold_note_time=1.0):
-    # delay until the note should be turned on
+    # Delay until the note should be turned on
     await asyncio.sleep(init_note_delay)
 
-    # start loop that will initiate and adjust power output to solenoid
+    # Start loop that will initiate and adjust power output to solenoid
     start_time = time.time()
 
     while True:
@@ -214,7 +214,7 @@ async def trigger_note(note, init_note_delay=0.0, velocity=255, hold_note_time=1
         await asyncio.sleep(0.01)
 
 
-async def play_midi_file(midi_filename):
+async def play_midi_file(midi_filename) -> None:
     # TODO: be able to start playback from a certain point in the video (10 seconds in)
     # TODO: add a 30 second limit to video playback
 
@@ -240,12 +240,12 @@ async def play_midi_file(midi_filename):
                 continue
         else:
             if (msg.type == 'note_on') and (msg.velocity != 0):
-                note = msg.note - starting_note
+                note = msg.note - STARTING_NOTE
                 logger.debug(f"note_on {note} {msg.velocity} {input_time}")
                 temp_lengs.update({note: {"velocity": msg.velocity, "init_note_delay": input_time}})
 
             elif (msg.type == 'note_off') or ((msg.type == 'note_on') and (msg.velocity == 0)):
-                note = msg.note - starting_note
+                note = msg.note - STARTING_NOTE
                 logger.debug(f"note_off {note}")
                 # logger.debug(temp_lens)
 
@@ -270,6 +270,7 @@ def create_connection_with_piano():
     # port_to_use = os.popen("ls -a /dev/cu.usbserial*", ).read().split('\n')[0]
 
     try:
+
         potential_ports = subprocess.check_output(["ls -a /dev/cu.usbserial*"], shell=True,
                                                   stderr=subprocess.DEVNULL).decode('ascii')
 
@@ -284,7 +285,7 @@ def create_connection_with_piano():
         logger.debug(f"Connecting to arduino on port:{port_to_use}")
         arduino_connection.open()
 
-    except:
+    except Exception as e:
         logger.warning("Unable to connect to Arduino. Is it plugged in?")
         raise ConnectionRefusedError
 
@@ -301,18 +302,28 @@ def hardware_process_loop(hardware_visuals_conn, play_q):
     logger.info("Finished playback of song on hardware")
 
 
-def create_connection_with_terminal():
+def create_connection_with_terminal() -> None:
+    """
+    This is used to visualize the piano in the terminal
+    :return:
+    """
     global sock
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.connect(('127.0.0.1', 8001))
     except:
-        # TODO: This should be run by b2
         logger.critical(f"Socket connection refused. Run netcat with `nc -dkl 8001`.")
         raise ConnectionRefusedError
 
 
-def hardware_process(sigint_e, hardware_visuals_conn, play_q, ):
+def hardware_process(sigint_e, hardware_visuals_conn, play_q):
+    """
+    The main hardware process
+    :param sigint_e:
+    :param hardware_visuals_conn:
+    :param play_q: A queue of midi files to play on the piano
+    :return:
+    """
     log_if_in_debug_mode(logger, __name__)
 
     global TEST_FLAG
@@ -320,44 +331,25 @@ def hardware_process(sigint_e, hardware_visuals_conn, play_q, ):
 
     if TEST_FLAG:
         create_connection_with_terminal()
-
-    else:  # test mode is disabled
+    else:
         create_connection_with_piano()
 
     while not sigint_e.is_set():
         try:
             hardware_process_loop(hardware_visuals_conn, play_q)
-
         except:
             pass
     else:
         logger.info("Hardware process has been shut down.")
 
-def play_random_verified_song():
 
-    mypath = "/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/verified"
-    onlyfiles = [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
+def play_random_song_from_dir(directory):
 
-    random.shuffle(onlyfiles)
+    only_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
 
-    for mid_track in onlyfiles:
-        try:
-            asyncio.run(
-                play_midi_file(f"{mypath}/{mid_track}"))
-            time.sleep(10)
-        except KeyboardInterrupt:
-            time.sleep(3)
-            continue
+    random.shuffle(only_files)
 
-
-def play_random_real_song():
-
-    mypath = "/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/real"
-    onlyfiles = [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]
-
-    random.shuffle(onlyfiles)
-
-    for mid_track in onlyfiles:
+    for mid_track in only_files:
         try:
             asyncio.run(
                 play_midi_file(f"{mypath}/{mid_track}"))
@@ -368,23 +360,23 @@ def play_random_real_song():
 
 
 if __name__ == '__main__':
-    logger.info("Running some tests.")
 
+    logger.info("Running some tests.")
     create_connection_with_piano()
 
+    # Tests
     # asyncio.run(test_every_note())
     # asyncio.run(test_every_note_at_once())
-
-    # turn_on_some_notes()  # NOTE: Don't run this with power enabled
+    # turn_on_n_notes()  # NOTE: Don't run this with power enabled
 
     # mid_tracks = ["Pirate.mid"]
-    #
+    user_path = "/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/"
     # for mid_track in mid_tracks:
-    #     asyncio.run(play_midi_file(f"/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/verified/{mid_track}"))
-    #     time.sleep(10)
+        # asyncio.run(play_midi_file(os.path.join(user_path, "verified", mid_track)))
+        # time.sleep(10)
 
-    # asyncio.run(play_midi_file(f"/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/tests/scale.mid"))
-    # asyncio.run(play_midi_file(f"/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/real/ShakeItOff.mid"))
+    # asyncio.run(play_midi_file(os.path.join(user_path, "tests/scale.mid")))
     # play_random_real_song()
 
-    play_random_verified_song()
+    mypath = "/Users/malcolm/Projects/Personal Projects/Bertha2/files/midi/verified"
+    play_random_song_from_dir(mypath)
