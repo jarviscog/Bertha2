@@ -6,7 +6,7 @@ from pytube import Playlist
 from pytube.extract import video_id
 
 from bertha2.settings import queue_save_file
-from bertha2.start import save_queues, load_queue
+from bertha2.main import save_queues, load_queue
 
 
 def convert_queue_to_list(in_queue):

@@ -1,6 +1,10 @@
-# this program is designed to stress test the stream
-# watch and realize bugs with the system
-# need different twitch creds to send test messages
+#!/usr/bin/env python
+
+""" Sends messages to the chat for testing
+This program is designed to stress test the stream
+Watch and realize bugs with the system
+Need different twitch creds to send test messages
+"""
 
 import socket
 import time
