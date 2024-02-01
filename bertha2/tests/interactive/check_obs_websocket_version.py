@@ -3,13 +3,6 @@ import logging
 import asyncio
 import simpleobsws
 
-
-# TODO: This is caused because we are grabbing the default logger
-# This is to prevent messy debug logs from pyppeteer
-simpleobsws_logger = logging.getLogger("simpleobsws")
-simpleobsws_logger.setLevel(50)
-simpleobsws_logger.addHandler(logging.StreamHandler())
-
 parameters = simpleobsws.IdentificationParameters(
     ignoreNonFatalRequestChecks=False)  # Create an IdentificationParameters object (optional for connecting)
 

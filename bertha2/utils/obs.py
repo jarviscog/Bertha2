@@ -26,7 +26,6 @@ obs_ws_client = create_obs_websocket_client()
 
 
 async def update_obs_source_properties(updated_source_properties):
-    # This will error if OBS isn't running
     try:
         await obs_ws_client.connect()  # Make the connection to obs-websocket
         await obs_ws_client.wait_until_identified()  # Wait for the identification handshake to complete

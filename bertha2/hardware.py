@@ -15,18 +15,11 @@ import serial
 
 import logging
 
-# TODO: This is caused because we are grabbing the default logger
-# This is to prevent messy debug logs 
-asyncio_logger = logging.getLogger("asyncio")
-asyncio_logger.setLevel(50)
-asyncio_logger.addHandler(logging.StreamHandler())
-
-
 from bertha2.settings import cli_args, SOLENOID_COOLDOWN_S, LOG_FORMAT
 from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode, initialize_root_logger
 
 # logger = initialize_module_logger(__name__)
-logging.basicConfig(level=10, format=LOG_FORMAT)
+# logger.basicConfig(level=10, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 ### GLOBAL VARIABLES ###

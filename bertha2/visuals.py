@@ -94,13 +94,13 @@ def update_status_text():
 
 
 def update_onscreen_visuals_from_state():
-    logger.debug("updating visuals")
+    logger.debug("Updating visuals")
 
-    # update next up
+    # Update next up
     if visuals_state["does_next_up_need_update"]:
         update_playing_next()
 
-    # update status text at the bottom of the screen
+    # Update status text at the bottom of the screen
     if visuals_state["does_status_text_need_update"]:
         update_status_text()
 
