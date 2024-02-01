@@ -21,14 +21,9 @@ from bertha2.utils.logs import initialize_module_logger, log_if_in_debug_mode
 
 logger = initialize_module_logger(__name__)
 
-# This is to prevent messy debug logs from pyppeteer
-pptr_logger = logging.getLogger("pyppeteer")
-pptr_logger.setLevel(50)
-pptr_logger.addHandler(logging.StreamHandler())
-
 
 def download_video_audio(youtube_url):
-    logger.debug(f"Converting YouTube URL into audio file...")
+    logger.debug(f"Converting YouTube URL {youtube_url} into audio file...")
 
     yt = YouTube(youtube_url)
     file_name = video_id(youtube_url)

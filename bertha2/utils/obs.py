@@ -1,11 +1,18 @@
 import asyncio
-
 import simpleobsws
+import logging
 
 from bertha2.settings import OBS_WEBSOCKET_URL, VIDEO_WIDTH, VIDEO_HEIGHT
 from bertha2.utils.logs import initialize_module_logger
 
+
 logger = initialize_module_logger(__name__)
+
+# TODO: This is caused because we are grabbimg the default logger
+# This is to prevent messy debug logs from pyppeteer
+simpleobsws_logger = logging.getLogger("simpleobsws")
+simpleobsws_logger.setLevel(50)
+simpleobsws_logger.addHandler(logging.StreamHandler())
 
 
 def create_obs_websocket_client():
