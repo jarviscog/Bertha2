@@ -15,7 +15,8 @@ logger = initialize_module_logger(__name__)
 
 visuals_state = DEFAULT_VISUALS_STATE
 
-def filter_cuss_words_from_title(title: str):
+
+def filter_cuss_words_from_title(title: str) -> str:
     new_title = title
     for word in CUSS_WORDS:
         new_title = new_title.replace(word, "****")
@@ -23,20 +24,17 @@ def filter_cuss_words_from_title(title: str):
     return new_title
 
 
-def shorten_title(title: str):
+def shorten_title(title: str) -> str:
     if len(title) > MAX_VIDEO_TITLE_LENGTH_QUEUE:
         title = title[0:(MAX_VIDEO_TITLE_LENGTH_QUEUE - 3)] + "..."
 
     return title
 
 
-def process_title(title: str):
+def format_title(title: str) -> str:
     title = filter_cuss_words_from_title(title)
     title = shorten_title(title)
     return title
-
-def convert_list_of_objects_into_list_of_strings(list_of_objects, key):
-    return [object_in_list[key] for object_in_list in list_of_objects]
 
 
 def create_playing_next_string(queued_video_titles: list):
@@ -48,7 +46,7 @@ def create_playing_next_string(queued_video_titles: list):
         # the second condition in this if statement does:
         # if a video is playing, generate next up from the 2nd video in the list instead of the 1st
         if (index < most_queued_videos_to_display) and (index >= (0 + visuals_state["is_video_currently_playing"])):
-            playing_next_string += f"{str(index + 1 - visuals_state['is_video_currently_playing'])}. {process_title(video_title)}\n"
+            playing_next_string += f"{str(index + 1 - visuals_state['is_video_currently_playing'])}. {format_title(video_title)}\n"
 
     if len(queued_video_titles) > most_queued_videos_to_display:
         playing_next_string += f"{len(queued_video_titles) - most_queued_videos_to_display} more video(s) queued..."
@@ -58,9 +56,11 @@ def create_playing_next_string(queued_video_titles: list):
 
     return playing_next_string
 
+
 def update_playing_next():
 
-    queued_video_titles = convert_list_of_objects_into_list_of_strings(visuals_state["queued_video_metadata_objects"], "title")
+    list_of_objects = visuals_state["queued_video_metadata_objects"]
+    queued_video_titles = [object_in_list["title"] for object_in_list in list_of_objects]
 
     visuals_state["currently_displayed_next_up"] = create_playing_next_string(queued_video_titles)
     update_obs_text_source_value('queue', visuals_state["currently_displayed_next_up"])
@@ -76,14 +76,14 @@ def update_status_text():
             "currently_displayed_status_text"] = f"Bertha2 is cooling down for the next {SOLENOID_COOLDOWN_S} seconds, please wait."
         visuals_state["currently_playing_video_path"] = ""
 
-    elif visuals_state["queued_video_metadata_objects"] != []:  # if there are videos in the queue
+    elif visuals_state["queued_video_metadata_objects"]:  # if there are videos in the queue
         visuals_state[
             "currently_displayed_status_text"] = f"Current Video: {visuals_state['queued_video_metadata_objects'][0]['title']}"
         visuals_state["currently_playing_video_path"] = visuals_state["queued_video_metadata_objects"][0][
             "filepath"]
         logger.debug(visuals_state["queued_video_metadata_objects"][0])
 
-    elif visuals_state["queued_video_metadata_objects"] == []:  # there aren't any videos to be played
+    elif not visuals_state["queued_video_metadata_objects"]: # there aren't any videos to be played
         visuals_state["currently_displayed_status_text"] = NO_VIDEO_PLAYING_TEXT
         visuals_state["currently_playing_video_path"] = ""
 
@@ -165,11 +165,9 @@ def visuals_process(converter_visuals_conn, hardware_visuals_conn,):
         visuals_process_loop(multiprocessing_connection_list)
 
 
-
-
 if __name__ == "__main__":
 
-    queued_video_titles_case_1 = [
+    queued_video_titles_test = [
         "10 Surprising Facts About the Universe",
         "Cooking Tutorial: How to Make Delicious Brownies",
         "Exploring Abandoned Places: Haunted Mansion",
@@ -184,4 +182,4 @@ if __name__ == "__main__":
 
     visuals_state["is_video_currently_playing"] = True
 
-    print(create_playing_next_string(queued_video_titles_case_1))
+    print(create_playing_next_string(queued_video_titles_test))
