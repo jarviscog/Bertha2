@@ -28,12 +28,9 @@ MAX_VIDEO_LENGTH_SECONDS = 360
 # Converter
 CUSS_WORDS_FILENAME = os.path.join(cwd, "cuss_words.txt")
 
-
 # Hardware
 SOLENOID_COOLDOWN_S = 30
 
-
-# Visuals
 
 def import_cuss_words():
     global cuss_words
@@ -45,7 +42,7 @@ def import_cuss_words():
             word_list = list(filter(None, word_list))  # Remove blank elements (e.g. "") from array
             return word_list
     except Exception as e:
-        print(f"CUSS WORDS NOT ENABLED {e}")
+        print(f"Error parsing cuss words...skipping \n{e}")
         return []
 
 CUSS_WORDS = import_cuss_words()
@@ -102,6 +99,7 @@ STATUS_TEXT_OBS_SOURCE_ID = "current_song"
 PLAYING_VIDEO_OBS_SOURCE_ID = "playing_video"
 
 
+# TODO this should be a class
 DEFAULT_VISUALS_STATE = {
     "currently_displayed_status_text": NO_VIDEO_PLAYING_TEXT,
     "currently_playing_video_path": "",
